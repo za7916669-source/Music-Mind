@@ -279,6 +279,23 @@ def home():
 # ============================================================
 # Health
 # ============================================================
+@app.get("/debug/files")
+def debug_files():
+    return {
+        "cwd": str(Path.cwd()),
+        "project_root": str(PROJECT_ROOT),
+        "database_path": str(DATABASE_PATH),
+        "database_exists": DATABASE_PATH.exists(),
+        "database_size": (
+            DATABASE_PATH.stat().st_size
+            if DATABASE_PATH.exists()
+            else None
+        ),
+        "root_files": [
+            p.name
+            for p in Path.cwd().iterdir()
+        ],
+    }
 
 @app.get(
     "/health",
