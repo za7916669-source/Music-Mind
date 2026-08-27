@@ -26,7 +26,33 @@ from backend.recommender import SimilarityRecommender
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-DATABASE_PATH = PROJECT_ROOT / "similar_songs.db"
+DATABASE_PATH = Path("similar_songs.db").resolve()
+
+app = FastAPI(
+    title="MusicMind Similar Songs API",
+    version="1.0.0",
+    description=(
+        "Fast content-based music recommendation API "
+        "using audio features and genre information."
+    ),
+)
+@app.get("/debug/files")
+def debug_files():
+    return {
+        "project_root": str(PROJECT_ROOT),
+        "database_path": str(DATABASE_PATH),
+        "database_exists": DATABASE_PATH.exists(),
+        "database_size": (
+            DATABASE_PATH.stat().st_size
+            if DATABASE_PATH.exists()
+            else None
+        ),
+        "root_files": [
+            p.name
+            for p in PROJECT_ROOT.iterdir()
+        ],
+    }
+
 
 
 # ============================================================
