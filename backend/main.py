@@ -28,6 +28,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DATABASE_PATH = Path("similar_songs.db").resolve()
 
+
+# ============================================================
+# FastAPI
+# ============================================================
+
 app = FastAPI(
     title="MusicMind Similar Songs API",
     version="1.0.0",
@@ -36,9 +41,16 @@ app = FastAPI(
         "using audio features and genre information."
     ),
 )
+
+
+# ============================================================
+# Debug / Deployment Diagnostics
+# ============================================================
+
 @app.get("/debug/files")
 def debug_files():
     return {
+        "cwd": str(Path.cwd()),
         "project_root": str(PROJECT_ROOT),
         "database_path": str(DATABASE_PATH),
         "database_exists": DATABASE_PATH.exists(),
@@ -53,6 +65,28 @@ def debug_files():
         ],
     }
 
+
+# ============================================================
+# CORS
+# ============================================================
+
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
+)
 
 
 # ============================================================
@@ -102,43 +136,6 @@ class APIInfoResponse(BaseModel):
     message: str
     version: str
     documentation: str
-
-
-# ============================================================
-# FastAPI
-# ============================================================
-
-app = FastAPI(
-    title="MusicMind Similar Songs API",
-    version="1.0.0",
-    description=(
-        "Fast content-based music recommendation API "
-        "using audio features and genre information."
-    ),
-)
-
-
-# ============================================================
-# CORS
-# ============================================================
-
-app.add_middleware(
-    CORSMiddleware,
-
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-
-    allow_credentials=True,
-
-    allow_methods=["*"],
-
-    allow_headers=["*"],
-)
 
 
 # ============================================================
@@ -279,23 +276,6 @@ def home():
 # ============================================================
 # Health
 # ============================================================
-@app.get("/debug/files")
-def debug_files():
-    return {
-        "cwd": str(Path.cwd()),
-        "project_root": str(PROJECT_ROOT),
-        "database_path": str(DATABASE_PATH),
-        "database_exists": DATABASE_PATH.exists(),
-        "database_size": (
-            DATABASE_PATH.stat().st_size
-            if DATABASE_PATH.exists()
-            else None
-        ),
-        "root_files": [
-            p.name
-            for p in Path.cwd().iterdir()
-        ],
-    }
 
 @app.get(
     "/health",
@@ -650,3 +630,4 @@ def recommendations(
 
         results=response_results,
     )
+
