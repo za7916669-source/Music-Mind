@@ -82,11 +82,15 @@ Thumbs.db
 # ============================================================
 
 *.db
-
-
+!similar_songs.db
 # ============================================================
 # Python / ML Generated Files
 # ============================================================
 
 *.joblib
 *.npz
+# MusicMind trained ML model artifacts
+!backend/ml/
+!backend/ml/model/
+!backend/ml/model/*.joblib
+!backend/ml/model/*.npz
