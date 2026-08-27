@@ -1,0 +1,19 @@
+[project]
+name = "music-mind"
+version = "1.0.0"
+description = "MusicMind AI music recommendation system"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "joblib",
+    "pydantic",
+    "pandas",
+]
+
+[tool.fastapi]
+entrypoint = "backend.main:app"
