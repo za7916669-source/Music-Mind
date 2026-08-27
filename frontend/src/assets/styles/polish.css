@@ -1,0 +1,333 @@
+/* ============================================================
+   Music Mind — polish.css
+   Import this AFTER your existing stylesheet so these rules win
+   the cascade, e.g. in main.jsx / App.jsx:
+     import './App.css'
+     import './polish.css'
+
+   REQUIRES: your theme state to be reflected as a `data-theme`
+   attribute on a wrapping element (ideally <html> or <body>, or
+   your top-level app <div>). If you don't have this yet, add it
+   wherever `theme` currently lives, e.g.:
+
+     <div className="app" data-theme={theme}>
+       ...
+     </div>
+
+   Without data-theme being set, the background images below won't
+   switch — everything else in this file works regardless.
+   ============================================================ */
+
+:root {
+  --color-indigo-primary: #6366f1;
+  --color-indigo-accent: #a855f7;
+  --color-royal-primary: #2563eb;
+  --color-text-light: #f8fafc;
+  --color-text-dim: #cbd5e1;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+}
+
+/* ------------------------------------------------------------
+   THEME BACKGROUNDS
+   Swap in your actual file paths/names here.
+   ------------------------------------------------------------ */
+[data-theme="indigo"] body,
+[data-theme="indigo"] {
+  --bg-image: url("/assets/backgrounds/music_mind_bg_dark_indigo.png");
+  --overlay-color: rgba(8, 6, 20, 0.35);
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] {
+  --bg-image: url("/assets/backgrounds/music_mind_bg_dark_minimal.png");
+  --overlay-color: rgba(0, 0, 0, 0.30);
+}
+
+[data-theme="light"] body,
+[data-theme="light"] {
+  --bg-image: url("/assets/backgrounds/music_mind_bg_light.png");
+  --overlay-color: rgba(255, 255, 255, 0.10);
+}
+
+body {
+  background-image: linear-gradient(var(--overlay-color), var(--overlay-color)), var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  transition: background-image 0.4s ease;
+}
+
+/* ------------------------------------------------------------
+   HEADER — frosted glass nav bar
+   ------------------------------------------------------------ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15, 12, 30, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .header {
+  background: rgba(255, 255, 255, 0.65);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.header nav {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.header nav a {
+  position: relative;
+  color: var(--color-text-dim);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.25rem 0;
+  transition: color 0.2s ease;
+}
+
+.header nav a:hover {
+  color: var(--color-text-light);
+}
+
+.header nav a.active {
+  color: var(--color-text-light);
+}
+
+.header nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-indigo-primary), var(--color-indigo-accent));
+}
+
+.theme-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.theme-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: rotate(25deg);
+}
+
+/* ------------------------------------------------------------
+   EYEBROW BADGE — replaces the old full-width banner line
+   ------------------------------------------------------------ */
+.eyebrow-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0 0;
+}
+
+.eyebrow-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--color-text-dim);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(6px);
+}
+
+[data-theme="light"] .eyebrow-badge {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #475569;
+}
+
+.eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-indigo-accent);
+  box-shadow: 0 0 8px var(--color-indigo-accent);
+}
+
+/* ------------------------------------------------------------
+   TRACK CARD
+   ------------------------------------------------------------ */
+.track-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+}
+
+.track-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .track-card {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(15, 23, 42, 0.07);
+}
+
+[data-theme="light"] .track-card:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.track-rank {
+  width: 1.75rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-text-dim);
+  opacity: 0.6;
+}
+
+.track-art {
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, var(--color-indigo-primary), var(--color-royal-primary));
+}
+
+.track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="light"] .track-name {
+  color: #0f172a;
+}
+
+.track-artists {
+  margin: 0.15rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-album {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+  opacity: 0.7;
+}
+
+.track-genres {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.genre-tag {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+[data-theme="light"] .genre-tag {
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+  border-color: rgba(99, 102, 241, 0.18);
+}
+
+.track-meta {
+  width: 8rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.similarity {
+  width: 100%;
+}
+
+.similarity-track,
+.popularity-track {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+
+[data-theme="light"] .similarity-track,
+[data-theme="light"] .popularity-track {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.similarity-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-indigo-primary), var(--color-indigo-accent));
+}
+
+.popularity-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #64748b, #94a3b8);
+}
+
+.similarity-label {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--color-text-dim);
+  text-align: right;
+}

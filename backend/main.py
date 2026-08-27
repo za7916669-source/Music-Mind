@@ -1,14 +1,32 @@
-"""FastAPI application for Similar Songs AI."""
+"""
+MusicMind FastAPI Backend
+
+API for:
+
+    - Track search
+    - Track lookup
+    - Similar-song recommendations
+    - Health checks
+"""
 
 from __future__ import annotations
 
-from functools import lru_cache
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 
-from backend.recommender import SimilarityRecommender, database_path
+from backend.recommender import SimilarityRecommender
+
+
+# ============================================================
+# Paths
+# ============================================================
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+DATABASE_PATH = PROJECT_ROOT / "similar_songs.db"
 
 
 # ============================================================
@@ -16,7 +34,10 @@ from backend.recommender import SimilarityRecommender, database_path
 # ============================================================
 
 class TrackResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )
 
     track_id: str
     track_name: str
@@ -28,12 +49,14 @@ class TrackResponse(BaseModel):
 
 
 class SearchResponse(BaseModel):
+
     query: str
     total_results: int
     results: list[TrackResponse]
 
 
 class RecommendationResponse(BaseModel):
+
     seed_track_id: str
     genre: str | None
     artist: str | None
@@ -42,61 +65,29 @@ class RecommendationResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+
     status: str
     database_exists: bool
+    recommender_ready: bool
 
 
 class APIInfoResponse(BaseModel):
+
     message: str
     version: str
     documentation: str
 
 
 # ============================================================
-# Recommender
-# ============================================================
-
-@lru_cache(maxsize=1)
-def get_recommender() -> SimilarityRecommender:
-    """
-    Create the recommendation engine once and reuse it.
-
-    This prevents the recommender from being reloaded
-    for every API request.
-    """
-    return SimilarityRecommender()
-
-
-# ============================================================
-# Helper Functions
-# ============================================================
-
-def to_response(track) -> TrackResponse:
-    """
-    Convert a track returned by the recommender
-    into a validated API response.
-    """
-    return TrackResponse(
-        track_id=track.track_id,
-        track_name=track.track_name,
-        album_name=track.album_name,
-        artists=list(track.artists),
-        genres=list(track.genres),
-        popularity=track.popularity,
-        similarity=track.similarity,
-    )
-
-
-# ============================================================
-# FastAPI Application
+# FastAPI
 # ============================================================
 
 app = FastAPI(
     title="MusicMind Similar Songs API",
     version="1.0.0",
     description=(
-        "A content-based music recommendation API. "
-        "Songs are recommended using audio-feature similarity."
+        "Fast content-based music recommendation API "
+        "using audio features and genre information."
     ),
 )
 
@@ -107,36 +98,160 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
+
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"],
 )
 
 
 # ============================================================
-# Root Endpoint
+# Recommender Singleton
 # ============================================================
 
-@app.get("/", response_model=APIInfoResponse, tags=["System"])
-def home() -> APIInfoResponse:
-    """
-    Welcome endpoint for the MusicMind API.
-    """
+_recommender: SimilarityRecommender | None = None
+
+
+def get_recommender() -> SimilarityRecommender:
+
+    global _recommender
+
+    if _recommender is None:
+
+        print()
+        print("=" * 65)
+        print("Initializing MusicMind Recommendation Engine")
+        print("=" * 65)
+        print()
+
+        _recommender = SimilarityRecommender()
+
+        print()
+        print(
+            "Recommendation engine initialized successfully."
+        )
+        print()
+
+    return _recommender
+
+
+# ============================================================
+# Response Conversion
+# ============================================================
+
+def to_response(
+    track,
+) -> TrackResponse:
+
+    # --------------------------------------------------------
+    # Artists
+    # --------------------------------------------------------
+
+    artists = []
+
+    for artist in track.artists:
+
+        name = getattr(
+            artist,
+            "name",
+            None,
+        )
+
+        if name:
+            artists.append(name)
+
+    # --------------------------------------------------------
+    # Genres
+    # --------------------------------------------------------
+
+    genres = []
+
+    for genre in track.genres:
+
+        name = getattr(
+            genre,
+            "name",
+            None,
+        )
+
+        if name:
+            genres.append(name)
+
+    # --------------------------------------------------------
+    # Popularity
+    # --------------------------------------------------------
+
+    popularity = getattr(
+        track,
+        "popularity",
+        None,
+    )
+
+    # --------------------------------------------------------
+    # Similarity
+    # --------------------------------------------------------
+
+    similarity = getattr(
+        track,
+        "similarity",
+        None,
+    )
+
+    return TrackResponse(
+        track_id=track.track_id,
+
+        track_name=track.track_name,
+
+        album_name=getattr(
+            track,
+            "album_name",
+            None,
+        ),
+
+        artists=artists,
+
+        genres=genres,
+
+        popularity=popularity,
+
+        similarity=similarity,
+    )
+
+
+# ============================================================
+# Root
+# ============================================================
+
+@app.get(
+    "/",
+    response_model=APIInfoResponse,
+    tags=["System"],
+)
+def home():
+
     return APIInfoResponse(
-        message="MusicMind Similar Songs API is running",
+        message=(
+            "MusicMind Similar Songs API is running"
+        ),
+
         version="1.0.0",
+
         documentation="/docs",
     )
 
 
 # ============================================================
-# Health Check
+# Health
 # ============================================================
 
 @app.get(
@@ -144,13 +259,53 @@ def home() -> APIInfoResponse:
     response_model=HealthResponse,
     tags=["System"],
 )
-def health() -> HealthResponse:
-    """
-    Check whether the API and database are available.
-    """
+def health():
+
+    # --------------------------------------------------------
+    # Check actual database location
+    # --------------------------------------------------------
+
+    database_exists = DATABASE_PATH.exists()
+
+    # --------------------------------------------------------
+    # Check recommender
+    # --------------------------------------------------------
+
+    recommender_ready = False
+
+    try:
+
+        get_recommender()
+
+        recommender_ready = True
+
+    except Exception as error:
+
+        print(
+            f"Health check error: {error}"
+        )
+
+    # --------------------------------------------------------
+    # Overall status
+    # --------------------------------------------------------
+
+    if (
+        database_exists
+        and recommender_ready
+    ):
+
+        status = "ok"
+
+    else:
+
+        status = "degraded"
+
     return HealthResponse(
-        status="ok",
-        database_exists=database_path().exists(),
+        status=status,
+
+        database_exists=database_exists,
+
+        recommender_ready=recommender_ready,
     )
 
 
@@ -164,30 +319,71 @@ def health() -> HealthResponse:
     tags=["Tracks"],
 )
 def search_tracks(
+
     q: str = Query(
         min_length=1,
-        description="Part of a track title or artist name",
+
+        description=(
+            "Part of a track title or artist name"
+        ),
     ),
+
     limit: int = Query(
         default=10,
+
         ge=1,
+
         le=50,
-        description="Maximum number of results",
     ),
-) -> SearchResponse:
-    """
-    Search for tracks by track title or artist name.
-    """
+):
 
     query = q.strip()
 
+    # --------------------------------------------------------
+    # Validate
+    # --------------------------------------------------------
+
     if not query:
+
         raise HTTPException(
             status_code=400,
-            detail="Search query cannot be empty",
+
+            detail=(
+                "Search query cannot be empty."
+            ),
         )
 
-    results = get_recommender().search(query, limit)
+    # --------------------------------------------------------
+    # Search
+    # --------------------------------------------------------
+
+    try:
+
+        results = (
+            get_recommender()
+            .search(
+                query=query,
+                limit=limit,
+            )
+        )
+
+    except Exception as error:
+
+        print(
+            f"Search error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+
+            detail=(
+                "Track search failed."
+            ),
+        )
+
+    # --------------------------------------------------------
+    # Convert
+    # --------------------------------------------------------
 
     response_results = [
         to_response(track)
@@ -196,13 +392,17 @@ def search_tracks(
 
     return SearchResponse(
         query=query,
-        total_results=len(response_results),
+
+        total_results=len(
+            response_results
+        ),
+
         results=response_results,
     )
 
 
 # ============================================================
-# Get Track by ID
+# Get Single Track
 # ============================================================
 
 @app.get(
@@ -210,24 +410,52 @@ def search_tracks(
     response_model=TrackResponse,
     tags=["Tracks"],
 )
-def get_track(track_id: str) -> TrackResponse:
-    """
-    Get one track using its Spotify track ID.
-    """
+def get_track(
+    track_id: str,
+):
 
-    track = get_recommender().get_track(track_id)
+    try:
 
-    if track is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Track not found",
+        track = (
+            get_recommender()
+            .get_track(
+                track_id
+            )
         )
 
-    return to_response(track)
+    except Exception as error:
+
+        print(
+            f"Track lookup error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+
+            detail=(
+                "Track lookup failed."
+            ),
+        )
+
+    # --------------------------------------------------------
+    # Not found
+    # --------------------------------------------------------
+
+    if track is None:
+
+        raise HTTPException(
+            status_code=404,
+
+            detail="Track not found.",
+        )
+
+    return to_response(
+        track
+    )
 
 
 # ============================================================
-# Get Similar Songs
+# Recommendations
 # ============================================================
 
 @app.get(
@@ -236,44 +464,129 @@ def get_track(track_id: str) -> TrackResponse:
     tags=["Recommendations"],
 )
 def recommendations(
+
     track_id: str,
+
     limit: int = Query(
         default=10,
+
         ge=1,
+
         le=50,
-        description="Maximum number of recommendations",
     ),
+
     genre: str | None = Query(
         default=None,
-        description="Optional genre filter",
     ),
+
     artist: str | None = Query(
         default=None,
-        description="Optional artist filter",
     ),
-) -> RecommendationResponse:
-    """
-    Get similar songs using the AI recommendation engine.
+):
 
-    Recommendations are generated from audio-feature similarity.
-    """
+    # --------------------------------------------------------
+    # Load recommender
+    # --------------------------------------------------------
 
-    recommender = get_recommender()
+    try:
 
-    seed_track = recommender.get_track(track_id)
+        recommender = get_recommender()
 
-    if seed_track is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Seed track not found",
+    except Exception as error:
+
+        print(
+            f"Recommender initialization error: {error}"
         )
 
-    results = recommender.recommend(
-        track_id,
-        limit,
-        genre=genre,
-        artist=artist,
-    )
+        raise HTTPException(
+            status_code=500,
+
+            detail=(
+                "Recommendation engine "
+                "could not be initialized."
+            ),
+        )
+
+    # --------------------------------------------------------
+    # Verify seed track
+    # --------------------------------------------------------
+
+    try:
+
+        seed_track = (
+            recommender.get_track(
+                track_id
+            )
+        )
+
+    except Exception as error:
+
+        print(
+            f"Seed track lookup error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+
+            detail=(
+                "Unable to load seed track."
+            ),
+        )
+
+    if seed_track is None:
+
+        raise HTTPException(
+            status_code=404,
+
+            detail=(
+                "Seed track not found."
+            ),
+        )
+
+    # --------------------------------------------------------
+    # Generate recommendations
+    # --------------------------------------------------------
+
+    try:
+
+        results = (
+            recommender.recommend(
+
+                track_id=track_id,
+
+                limit=limit,
+
+                genre=genre,
+
+                artist=artist,
+            )
+        )
+
+    except ValueError as error:
+
+        raise HTTPException(
+            status_code=404,
+
+            detail=str(error),
+        )
+
+    except Exception as error:
+
+        print(
+            f"Recommendation error: {error}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+
+            detail=(
+                "Recommendation generation failed."
+            ),
+        )
+
+    # --------------------------------------------------------
+    # Convert results
+    # --------------------------------------------------------
 
     response_results = [
         to_response(track)
@@ -281,9 +594,16 @@ def recommendations(
     ]
 
     return RecommendationResponse(
+
         seed_track_id=track_id,
+
         genre=genre,
+
         artist=artist,
-        total_results=len(response_results),
+
+        total_results=len(
+            response_results
+        ),
+
         results=response_results,
     )

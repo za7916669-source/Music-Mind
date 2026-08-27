@@ -1,52 +1,42 @@
-import Header from "./components/Header";
+import { Routes, Route } from "react-router-dom";
 import { useState } from "react";
-import { searchTracks } from "./services/api";
+
+import Header from "./components/Header";
+import Theme from "./components/Theme";
+
+import Discover from "./pages/Discover";
+import Explore from "./pages/Explore";
+import About from "./pages/About";
+import Song from "./pages/Song";
+
+import "./App.css";
 
 function App() {
- const [searchQuery, setSearchQuery] = useState("");
-
- const[results, setResults] = useState([]);
-
- async function handleSearch(){
-  if(!searchQuery.trim()){
-    return;
-  }
-
-  try{
-    const data = await searchTracks(searchQuery);
-     
-    setResults(data.results);
-  } catch(error) {
-    console.error(error);
-  }
- }
+  const [theme, setTheme] = useState("indigo");
 
   return (
-    <div>
-       <Header />
+    <div className="app" data-theme={theme}>
+      <Header />
 
+      <Routes>
+        <Route path="/" element={<Discover />} />
 
- <input
-  type="text"
-  placeholder="Search for a song or artist..."
-  value={searchQuery}
-  onChange={(event) => setSearchQuery(event.target.value)}
-/>
-      <button onClick={handleSearch}>
-       search
-      </button>
+        <Route path="/explore" element={<Explore />} />
 
-      <div>
-        {results.map((track) =>( 
-          <div key={track.track_id}>
-            <h3>{track.track_name}</h3>
-            <p>{track.artists.join(", ")}</p>
-            <p>{track.album_name}</p>
-      </div>
-        ))}
-        </div> 
+        <Route path="/about" element={<About />} />
 
-      <p>You searched for: {searchQuery}</p>
+        <Route
+          path="/theme"
+          element={
+            <Theme
+              theme={theme}
+              setTheme={setTheme}
+            />
+          }
+        />
+
+        <Route path="/song/:id" element={<Song />} />
+      </Routes>
     </div>
   );
 }
